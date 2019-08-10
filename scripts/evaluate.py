@@ -4,7 +4,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import argparse
 import operator
 from functools import reduce
-from typing import List, Callable, Iterable
+from typing import List, Callable, Iterable, Dict
 import h5py
 import numpy as np
 import pandas as pd
@@ -55,8 +55,9 @@ def save_in(store: h5py.File, layer_outputs: List[np.ndarray], metrics: List[Met
             store.create_dataset(f'outputs/{output_index}/{sample_id}', data=layer_output)
 
 
-def evaluate_batch(deepspeech: DeepSpeech, X: np.ndarray, y: np.ndarray, store: h5py.File,
+def evaluate_batch(deepspeech: DeepSpeech, inputs: Dict[str, np.ndarray], targets: Dict[str, np.ndarray], store: h5py.File,
                    references: pd.DataFrame, save_activations: bool, get_activations: Callable) -> List[Metric]:
+    X, y = inputs['X'], targets['y']
     if save_activations:
         *activations, y_hat = get_activations([X, 0])  # Learning phase is `test=0`
     else:
@@ -75,8 +76,8 @@ def evaluate(deepspeech: DeepSpeech, generator: Iterable, save_activations: bool
     get_activations = get_activations_function(deepspeech.model) if save_activations else None
 
     with h5py.File(store_path, mode='w') as store:
-        batch_metrics = [evaluate_batch(deepspeech, X, y, store, references, save_activations, get_activations)
-                         for X, y in tqdm(generator)]
+        batch_metrics = [evaluate_batch(deepspeech, inputs, targets, store, references, save_activations, get_activations)
+                         for inputs, targets in tqdm(generator)]
     with pd.HDFStore(store_path, mode='r+') as store:
         store.put('references', references)
     metrics = pd.DataFrame(reduce(operator.concat, batch_metrics))

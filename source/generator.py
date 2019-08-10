@@ -32,7 +32,7 @@ class DataGenerator(Sequence):
                  batch_size: int = 30,
                  features_store: h5py.File = None,
                  mask: bool = False,
-                 mask_params: Dict[Any] = None,
+                 mask_params: Dict[str, Any] = None,
                  is_adversarial: bool = False,
                  is_synthesized: bool = False):
         self._references = references
@@ -67,12 +67,12 @@ class DataGenerator(Sequence):
         """ Denotes the number of batches per epoch. """
         return int(np.floor(len(self._references.index) / self._batch_size))
 
-    def __getitem__(self, index: int) -> Tuple[np.ndarray, List[np.ndarray]]:
+    def __getitem__(self, index: int) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
         """ Operator to get the batch data. """
         batch_index = self.indices[index]
         return self._get_batch(batch_index)
 
-    def _get_batch(self, index: int) -> Tuple[np.ndarray, List[np.ndarray]]:
+    def _get_batch(self, index: int) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
         """ Read (if features store exist) or generate features and labels batch. """
         start, end = index * self._batch_size, (index + 1) * self._batch_size
         references = self._references[start:end]
@@ -87,9 +87,9 @@ class DataGenerator(Sequence):
             features = self._mask_features(features)
         if self.is_adversarial:
             is_synthesized_labels = np.zeros([self._batch_size]) + self.is_synthesized
-            return features, [labels, is_synthesized_labels]
+            return {'X': features}, {'y': labels, 'is_synthesized': is_synthesized_labels}
         else:
-            return features, [labels]
+            return {'X': features}, {'y': labels}
 
     def _read_features(self, paths: List[str]) -> np.ndarray:
         """ Read already prepared features from the store. """
@@ -127,7 +127,7 @@ class DistributedDataGenerator(Sequence):
         np.random.shuffle(self.indices)
 
     @classmethod
-    def from_audio_files(cls, generators_paramers: List[Dict[Any]]) -> "DistributedDataGenerator":
+    def from_audio_files(cls, generators_paramers: List[Dict]) -> "DistributedDataGenerator":
         generators = []
         for generator_parameters in generators_paramers:
             generator = DataGenerator.from_audio_files(**generator_parameters)
@@ -135,7 +135,7 @@ class DistributedDataGenerator(Sequence):
         return cls(generators)
 
     @classmethod
-    def from_prepared_features(cls, generators_paramers: List[Dict[Any]]) -> "DistributedDataGenerator":
+    def from_prepared_features(cls, generators_paramers: List[Dict]) -> "DistributedDataGenerator":
         generators = []
         for generator_parameters in generators_paramers:
             generator = DataGenerator.from_prepared_features(**generator_parameters)

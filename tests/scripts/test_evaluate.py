@@ -17,7 +17,9 @@ np.random.seed(123)
 
 @pytest.fixture
 def batch(generator: DataGenerator) -> Tuple[np.ndarray, np.ndarray]:
-    return generator[0]
+    inputs, targets = generator[0]
+    X, y = inputs['X'], targets['y']
+    return X, y
 
 
 def test_get_activations_function(model: Model, batch: Tuple[np.ndarray, np.ndarray]):
@@ -76,7 +78,7 @@ def test_save_in(store_path: str, layer_outputs: List[np.ndarray], metrics: Iter
         assert sample_X.shape == (299, 80, 1), 'Input layer and one additional dim'
 
 
-def test_evaluate(deepspeech: DeepSpeech, generator: Iterable, store_path: str) -> pd.DataFrame:
+def test_evaluate(deepspeech: DeepSpeech, generator: Iterable, store_path: str):
     metrics = evaluate(deepspeech, generator, save_activations=True, store_path=store_path)
     with pd.HDFStore(store_path, mode='r') as store:
         references = store['references']

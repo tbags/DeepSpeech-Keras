@@ -2,7 +2,8 @@ import os
 import pytest
 from typing import List
 from keras import Model
-from source.deepspeech import DeepSpeech, Configuration, Alphabet
+from source.configuration import ModelConfiguration
+from source.deepspeech import DeepSpeech, Alphabet
 from source.generator import DataGenerator
 from source.utils import chdir
 chdir(to='ROOT')
@@ -24,7 +25,7 @@ def alphabet_path(test_dir) -> str:
 
 
 @pytest.fixture
-def config(config_path) -> Configuration:
+def config(config_path) -> ModelConfiguration:
     return DeepSpeech.get_configuration(config_path)
 
 

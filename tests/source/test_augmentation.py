@@ -35,11 +35,11 @@ def features(audio_file_paths: List[str]):
 def test_mask_time_stripes(features: np.ndarray):
     time, channels = features.shape
     means = features.mean(axis=0)
-    masked = augmentation.mask_time_stripes(np.copy(features), means, time, T_range=[5, 10], ratio=0.3, space=5)
+    masked = augmentation.mask_time_stripes(np.copy(features), means, time, T_range=(5, 10), ratio=0.3, space=5)
     plot(masked)
     ratio = sum(np.array_equal(masked[t, :], means) for t in range(time)) / time
     assert np.isclose(ratio, 0.3, atol=0.1)
-    masked = augmentation.mask_time_stripes(np.copy(features), means, time, T_range=[5, 50], ratio=0.5, space=150)     # Avoid infinite loop
+    masked = augmentation.mask_time_stripes(np.copy(features), means, time, T_range=(5, 50), ratio=0.5, space=150)     # Avoid infinite loop
     plot(masked)
 
 

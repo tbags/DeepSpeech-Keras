@@ -10,6 +10,11 @@ is_close = lambda A, B: all(np.allclose(a, b, atol=1e-04) for a, b in zip(A, B))
 chdir(to='ROOT')
 
 
+def test_adversarial():
+    configuration = DeepSpeech.get_configuration('tests/models/adversarial/configuration.yaml')
+    pass
+
+
 def test_trainable():
     gpus = deepspeech.get_available_gpus()      # Support both Multi and Single-GPU tests
     base_configuration = DeepSpeech.get_configuration('tests/models/base/configuration.yaml')

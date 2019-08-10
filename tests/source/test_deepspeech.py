@@ -1,42 +1,41 @@
 import numpy as np
 from typing import List
-from keras.engine.training import Model
 from source.utils import chdir
-from source.deepspeech import DeepSpeech, Configuration, FeaturesExtractor, Alphabet
+from source.deepspeech import Model, DeepSpeech, ModelConfiguration, FeaturesExtractor, Alphabet
 is_same = lambda A, B: all(np.array_equal(a, b) for a, b in zip(A, B))
 chdir(to='ROOT')
 
 
-def test_config(config: Configuration):
+def test_config(config: ModelConfiguration):
     required_attrs = ['features_extractor', 'model', 'callbacks', 'optimizer', 'decoder']
     assert all(hasattr(config, attr) for attr in required_attrs)
 
 
-def test_get_model(config: Configuration):
+def test_get_model(config: ModelConfiguration):
     model = DeepSpeech.get_model(**config.model, is_gpu=False)
     assert type(model) == Model
     new_model = DeepSpeech.get_model(**config.model, is_gpu=False)
     assert is_same(model.get_weights(), new_model.get_weights())    # Test random seed
 
 
-def test_get_features_extractor(config: Configuration):
+def test_get_features_extractor(config: ModelConfiguration):
     features_extractor = DeepSpeech.get_features_extractor(**config.features_extractor)
     assert type(features_extractor) == FeaturesExtractor
 
 
-def test_get_decoder(config: Configuration, alphabet: Alphabet):
+def test_get_decoder(config: ModelConfiguration, alphabet: Alphabet):
     model = DeepSpeech.get_model(**config.model, is_gpu=False)
     decoder = DeepSpeech.get_decoder(alphabet=alphabet, model=model, **config.decoder)
     assert callable(decoder)
 
 
-def test_get_callbacks(test_dir: str, config: Configuration):
+def test_get_callbacks(test_dir: str, config: ModelConfiguration):
     model = DeepSpeech.get_model(**config.model, is_gpu=False)
     callbacks = DeepSpeech.get_callbacks(home_dir=test_dir, configurations=config.callbacks, model=model)
     assert len(callbacks) == 2
 
 
-def test_compile_model(config: Configuration):
+def test_compile_model(config: ModelConfiguration):
     model = DeepSpeech.get_model(**config.model, is_gpu=False)
     optimizer = DeepSpeech.get_optimizer(**config.optimizer)
     loss = DeepSpeech.get_losses()
