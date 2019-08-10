@@ -127,17 +127,17 @@ class DistributedDataGenerator(Sequence):
         np.random.shuffle(self.indices)
 
     @classmethod
-    def from_audio_files(cls, generators_paramers: List[Dict]) -> "DistributedDataGenerator":
+    def from_audio_files(cls, generators_params: List[Dict]) -> "DistributedDataGenerator":
         generators = []
-        for generator_parameters in generators_paramers:
+        for generator_parameters in generators_params:
             generator = DataGenerator.from_audio_files(**generator_parameters)
             generators.append(generator)
         return cls(generators)
 
     @classmethod
-    def from_prepared_features(cls, generators_paramers: List[Dict]) -> "DistributedDataGenerator":
+    def from_prepared_features(cls, generators_params: List[Dict]) -> "DistributedDataGenerator":
         generators = []
-        for generator_parameters in generators_paramers:
+        for generator_parameters in generators_params:
             generator = DataGenerator.from_prepared_features(**generator_parameters)
             generators.append(generator)
         return cls(generators)

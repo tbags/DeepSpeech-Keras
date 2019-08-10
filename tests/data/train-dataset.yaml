@@ -1,5 +1,5 @@
-constructor: DistributedDataGenerator
-source: from_audio_files
+class_name: DistributedDataGenerator
+source: audio_files
 parameters:
     - file_path: tests/data/audio.csv
       mask: True
@@ -16,5 +16,4 @@ parameters:
     - file_path: tests/data/audio.csv
       batch_size: 2
       mask: False
-      mask_params: None
       shuffle_after_epoch: 1
