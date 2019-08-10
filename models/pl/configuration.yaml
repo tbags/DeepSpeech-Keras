@@ -43,7 +43,7 @@ model:
       name: base_6
       units: 650
       return_sequences: True
-    - constructor: Dense
+    - constructor: DenseTimeDistributed
       name: base_7
       units: 36
       activation: softmax

@@ -52,7 +52,21 @@ def audio_file_paths() -> List[str]:
 
 @pytest.fixture
 def generator(deepspeech: DeepSpeech) -> DataGenerator:
-    return DataGenerator.from_audio_files(file_path='tests/data/audio.csv',
-                                          alphabet=deepspeech.alphabet,
-                                          features_extractor=deepspeech.features_extractor,
-                                          batch_size=2)
+    return DataGenerator.from_audio_files(
+        file_path='tests/data/audio.csv',
+        alphabet=deepspeech.alphabet,
+        features_extractor=deepspeech.features_extractor,
+        batch_size=2
+    )
+
+
+@pytest.fixture
+def syn_generator(deepspeech: DeepSpeech) -> DataGenerator:
+    return DataGenerator.from_audio_files(
+        file_path='tests/data/audio.csv',
+        alphabet=deepspeech.alphabet,
+        features_extractor=deepspeech.features_extractor,
+        batch_size=2,
+        is_adversarial=True,
+        is_synthesized=True
+    )
