@@ -1,0 +1,5 @@
+constructor: DataGenerator
+source: from_audio_files
+parameters:
+    file_path: tests/data/audio.csv
+    batch_size: 2

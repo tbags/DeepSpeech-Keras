@@ -39,7 +39,7 @@ def test_get_callbacks(test_dir: str, config: Configuration):
 def test_compile_model(config: Configuration):
     model = DeepSpeech.get_model(**config.model, is_gpu=False)
     optimizer = DeepSpeech.get_optimizer(**config.optimizer)
-    loss = DeepSpeech.get_loss()
+    loss = DeepSpeech.get_losses()
     DeepSpeech.compile_model(model, optimizer, loss)
     assert model._is_compiled
 

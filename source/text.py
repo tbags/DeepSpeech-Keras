@@ -1,6 +1,5 @@
-import numpy as np
-import warnings
 from typing import List
+import numpy as np
 
 
 class Alphabet:

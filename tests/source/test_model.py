@@ -28,7 +28,7 @@ def test_trainable():
     assert all(not is_same(base_model.get_layer(name).get_weights(), extended_model.get_layer(name).get_weights())
                for name in ['base_1', 'base_2', 'base_3'])
 
-    loss = DeepSpeech.get_loss()
+    loss = DeepSpeech.get_losses()
     optimizer = DeepSpeech.get_optimizer(**extended_configuration.optimizer)
     parallel_model = DeepSpeech.distribute_model(extended_model, gpus)
     DeepSpeech.compile_model(parallel_model, optimizer, loss)

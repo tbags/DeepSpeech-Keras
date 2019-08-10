@@ -1,0 +1,20 @@
+constructor: DistributedDataGenerator
+source: from_audio_files
+parameters:
+    - file_path: tests/data/audio.csv
+      mask: True
+      batch_size: 2
+      mask_params:
+          - F: 20
+          - mf: 1
+          - Tmin: 5
+          - Tmax: 15
+          - ratio_t: 0.3
+          - Tspace: 0.3
+      shuffle_after_epoch: 1         # Shuffle generator indices after the `n` epochs
+
+    - file_path: tests/data/audio.csv
+      batch_size: 2
+      mask: False
+      mask_params: None
+      shuffle_after_epoch: 1
