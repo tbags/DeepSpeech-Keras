@@ -11,7 +11,8 @@ from keras.callbacks import Callback, TerminateOnNaN, LearningRateScheduler, Red
 from keras.optimizers import Optimizer, SGD, Adam
 from keras.backend.tensorflow_backend import _get_available_gpus as get_available_gpus
 
-from source import audio, model, text, ctc_decoder, configuration, utils
+from source import model as model_module
+from source import audio, text, ctc_decoder, configuration, utils
 from source.model import Model
 from source.text import Alphabet
 from source.audio import FeaturesExtractor
@@ -61,18 +62,18 @@ class DeepSpeech:
         model_dir = os.path.dirname(config_path)
         gpus = get_available_gpus()
 
-        deepspech_model = cls.get_model(is_gpu=len(gpus) > 0, **config.model)
-        parallel_model = cls.distribute_model(deepspech_model, gpus)
+        deepspeech_model = cls.get_model(is_gpu=len(gpus) > 0, **config.model)
+        parallel_model = cls.distribute_model(deepspeech_model, gpus)
 
-        losses = cls.get_losses(adversarial=deepspech_model.is_adversarial)
+        losses = cls.get_losses(adversarial=deepspeech_model.is_adversarial)
         optimizer = cls.get_optimizer(**config.optimizer)
-        cls.compile_model(parallel_model, optimizer, losses)        # Set up traning for a distributed model.
+        cls.compile_model(parallel_model, optimizer, losses)        # Set up training for a distributed model.
 
         alphabet = cls.get_alphabet(alphabet_path)
-        decoder = cls.get_decoder(alphabet=alphabet, model=deepspech_model, **config.decoder)
+        decoder = cls.get_decoder(alphabet=alphabet, model=deepspeech_model, **config.decoder)
         features_extractor = cls.get_features_extractor(**config.features_extractor)
-        callbacks = cls.get_callbacks(home_dir=model_dir, configurations=config.callbacks, model=deepspech_model)
-        return cls(deepspech_model, alphabet, decoder, features_extractor, callbacks, gpus, parallel_model)
+        callbacks = cls.get_callbacks(home_dir=model_dir, configurations=config.callbacks, model=deepspeech_model)
+        return cls(deepspeech_model, alphabet, decoder, features_extractor, callbacks, gpus, parallel_model)
 
     def __call__(self, files: List[str]) -> List[str]:
         """ Easy interaction with the trained model """
@@ -129,15 +130,18 @@ class DeepSpeech:
     @staticmethod
     def compile_model(model: Model, optimizer: Optimizer, losses: List[Callable],
                       adversarial=False, adversarial_weight=float) -> None:
-        """ The compiled model means the model configurated for training. """
-        y = Input(name='y', shape=[None], dtype='int8')                                 # vector with encoded letters
+        """ The compiled model means the model configured for training. """
+        char_labels = Input(name='char_labels', shape=[None], dtype='int16')
         if adversarial:
-            is_synthesized = Input(name='is_synthesized', shape=None, dtype='int8')     # one number per sample
-            targets = [y, is_synthesized]
+            is_synthesized = Input(name='is_synthesized', shape=[None], dtype='float')
+            ctc_loss, cross_entropy = losses
+            targets = {'char_probs': char_labels, 'is_synthesized_prediction': is_synthesized}
+            metrics = {'char_probs': ctc_loss, 'is_synthesized_prediction': cross_entropy}
             loss_weights = [1, adversarial_weight]
+            return model.compile(optimizer, losses, metrics, loss_weights, target_tensors=targets)
         else:
-            targets, loss_weights = [y], [1]
-        model.compile(optimizer, losses, metrics=losses, target_tensors=targets, loss_weights=loss_weights)
+            targets = {'char_probs': char_labels}
+            return model.compile(optimizer, losses, target_tensors=targets)
 
     @staticmethod
     def get_configuration(file_path: str) -> ModelConfiguration:
@@ -148,9 +152,9 @@ class DeepSpeech:
     def get_model(name: str, **kwargs) -> Model:
         """ Define model base on the experiment configuration. """
         if name == 'deepspeech':
-            return model.deepspeech(**kwargs)
+            return model_module.deepspeech(**kwargs)
         elif name == 'deepspeech-custom':
-            return model.deepspeech_custom(**kwargs)
+            return model_module.deepspeech_custom(**kwargs)
         raise ValueError('Wrong model name')
 
     @staticmethod
@@ -186,7 +190,7 @@ class DeepSpeech:
 
         if adversarial:                              # Keras `binary_crossentropy` expects probabilities, so
             return [ctc_loss, binary_crossentropy]   # the last adversarial layer should be `sigmoid`.
-        else:                                        # Keras internaly reverse to logits and pass to Tensorflow.
+        else:                                        # Keras internally reverse to logits and pass to Tensorflow.
             return [ctc_loss]
 
     @staticmethod

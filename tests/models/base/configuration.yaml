@@ -25,7 +25,7 @@ model:
       name: base_2
       units: 10
       return_sequences: True
-    - constructor: Dense
+    - constructor: DenseTimeDistributed
       name: base_3
       units: 36
       activation: softmax

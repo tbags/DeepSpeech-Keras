@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import keras
 import deepspeech
 from deepspeech import DeepSpeech
 from source.model import deepspeech_custom
@@ -12,7 +13,27 @@ chdir(to='ROOT')
 
 def test_adversarial():
     configuration = DeepSpeech.get_configuration('tests/models/adversarial/configuration.yaml')
-    pass
+    configuration.model.pop('name')
+    model = deepspeech_custom(is_gpu=False, **configuration.model)
+    assert model.is_adversarial
+    assert 'X' in model.input.name
+    char_probs, is_synthesized_prediction = model.outputs
+    assert char_probs.shape.ndims == 3
+    assert is_synthesized_prediction.shape.ndims == 2
+    assert is_synthesized_prediction.shape[1].value == 1
+
+    adversarial_layer = model.get_layer('adversarial_1')
+    adversarial_kernel, adversarial_bias = adversarial_layer.get_weights()
+    assert is_same(adversarial_bias, [0])
+    assert adversarial_kernel.shape == (10, 1)
+    assert adversarial_layer.activation == keras.activations.sigmoid
+
+    loss = DeepSpeech.get_losses(adversarial=True)
+    optimizer = DeepSpeech.get_optimizer(**configuration.optimizer)
+    DeepSpeech.compile_model(model, optimizer, loss, adversarial=True, adversarial_weight=5)
+    assert len(model.metrics) == 2
+    assert len(model.loss_functions) == 2
+    assert model.loss_weights == [1, 5]
 
 
 def test_trainable():
