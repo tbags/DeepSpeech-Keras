@@ -11,7 +11,7 @@ import pandas as pd
 from tqdm import tqdm
 from keras import backend as K
 from keras.models import Model
-from source.generator import DataGenerator
+from source.configuration import DatasetConfiguration
 from source.deepspeech import DeepSpeech
 from source.metric import Metric, get_metrics
 from source.utils import chdir, load, create_logger
@@ -20,20 +20,11 @@ from source.utils import chdir, load, create_logger
 def parse_arguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--store', required=True, help='File hdf5 keeps evaluation results')
-    parser.add_argument('--model_dir', required=True, help='Pretrained model directory')
-    parser.add_argument('--features_store', required=True, help='HDF5 Store with precomputed features')
-    parser.add_argument('--batch_size', type=int, required=True, help='Batch size (depends on model) should be the same as during training')
+    parser.add_argument('--home_dir', required=True, help='Pretrained model directory')
+    parser.add_argument('--dataset', required=True, help='Dataset configuration file.')
     parser.add_argument('--log_file', help='Log file')
     parser.add_argument('--log_level', type=int, default=20, help='Log level')
     parser.add_argument('--save_activations', dest='save_activations', action='store_true', help='Save all activation through evaluation')
-    parser.add_argument('--mask', dest='mask', action='store_true', help='Mask features during training')
-    parser.add_argument('--mask_F', type=int)
-    parser.add_argument('--mask_mf', type=int)
-    parser.add_argument('--mask_Tmin', type=int)
-    parser.add_argument('--mask_Tmax', type=int)
-    parser.add_argument('--mask_mt', type=int)
-    parser.add_argument('--mask_Tspace', type=int)
-    parser.add_argument('--mask_ratio_t', type=float)
     args = parser.parse_args()
     return args
 
@@ -92,19 +83,11 @@ def evaluate(deepspeech: DeepSpeech, generator: Iterable, save_activations: bool
     return metrics
 
 
-def main(model_dir: str, store_path: str, features_store_path: str, batch_size: int,
-         save_activations: bool, mask: bool, args):
+def main(home_dir: str, dataset_config: str, store_path: str, save_activations: bool):
     """ Evaluate model using prepared features. """
-    deepspeech = load(model_dir)
-    generator = DataGenerator.from_prepared_features(
-        features_store_path,
-        alphabet=deepspeech.alphabet,
-        features_extractor=deepspeech.features_extractor,
-        batch_size=batch_size,
-        mask=mask,
-        mask_params=dict(F=args.mask_F, mf=args.mask_mf, Tmin=args.mask_Tmin, Tmax=args.mask_Tmax,
-                         mt=args.mask_mt, ratio_t=args.mask_ratio_t, Tspace=args.mask_Tspace)
-    )
+    deepspeech = load(home_dir)
+    dependencies = deepspeech.alphabet, deepspeech.features_extractor
+    generator = DatasetConfiguration(dataset_config, *dependencies).create_generator()
     units = calculate_units(deepspeech.model)
     logger.info(f'Model contains: {units//1e6:.0f}M units ({units})')
 
@@ -121,11 +104,8 @@ if __name__ == '__main__':
     logger.info(f'Arguments: \n{ARGUMENTS}')
 
     main(
-        model_dir=ARGUMENTS.model_dir,
+        home_dir=ARGUMENTS.home_dir,
+        dataset_config=ARGUMENTS.dataset,
         store_path=ARGUMENTS.store,
-        features_store_path=ARGUMENTS.features_store,
-        batch_size=ARGUMENTS.batch_size,
-        save_activations=ARGUMENTS.save_activations,
-        mask=ARGUMENTS.mask,
-        args=ARGUMENTS
+        save_activations=ARGUMENTS.save_activations
     )
