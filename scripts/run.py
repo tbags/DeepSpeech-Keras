@@ -51,7 +51,7 @@ if __name__ == "__main__":
     TRAIN_PATH = ARGS.train if ARGS.train else home('train-dataset.yaml')
     DEV_PATH = ARGS.dev if ARGS.dev else home('dev-dataset.yaml')
     WEIGHTS_PATH = ARGS.weights if ARGS.weights else home('weights.hdf5')
-    LOG_PATH = ARGS.log_level if ARGS.log_level else home('training.log')
+    LOG_PATH = ARGS.log if ARGS.log else home('training.log')
 
     logger = create_logger(LOG_PATH, level=ARGS.log_level, name='deepspeech')
     logger.info(f'Arguments: \n{ARGS}')
