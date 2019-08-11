@@ -11,6 +11,9 @@ logger = logging.getLogger('deepspeech')
 
 class ResultKeeper(Callback):
     """ Save evaluation result and log the processing results. """
+    text_batch_basic = 'Batch ({0}): {1:.2f}'
+    text_batch_rich = 'Batch ({0}): {1:.2f}   {2:.2f}   {3:.2f}'
+    text_epoch = 'Epoch ({0}): {1:.2f}   {2:.2f}'
 
     def __init__(self, file_path):
         super().__init__()
@@ -19,24 +22,32 @@ class ResultKeeper(Callback):
 
     def _set_up_new_batch(self, *_):
         """ Set up the new list for batch results."""
-        self.batch = []
+        self.batches = []
 
     on_epoch_begin = _set_up_new_batch
 
-    def _save_batch_result(self, index, logs={}):
-        """ Add next batch loss. """
-        loss = logs.get('loss')
-        self.batch.append(loss)
-        logger.info(f'Batch ({index}): {loss:.2f}')
+    def _save_batch_result(self, index, logs: dict):
+        """ Add the batch metrics. """
+        if 'is_synthesized_loss' in logs and 'main_output_loss' in logs:
+            metrics = [logs.get(k) for k in ['loss', 'is_synthesized_loss', 'main_output_loss']]
+            text = self.text_batch_rich.format(index, *metrics)
+        else:
+            metrics = [logs.get('loss')]
+            text = self.text_batch_basic.format(index, *metrics)
+        logger.info(text)
+        self.batches.append(metrics)
 
     on_batch_end = _save_batch_result
 
-    def _save_epoch_results(self, epoch, logs={}):
+    def _save_epoch_results(self, epoch, logs: dict):
         """ Collect all information about each epoch. """
-        loss = logs.get('loss')
-        val_loss = logs.get('val_loss')
-        self.results.append([epoch, loss, val_loss, self.batch])
-        logger.info(f'Epoch ({epoch}): {loss}   {val_loss}')
+        if 'is_synthesized_loss' in logs and 'main_output_loss' in logs:
+            metrics = [logs.get(k) for k in ['main_output_loss', 'val_main_output_loss']]
+        else:
+            metrics = [logs.get(k) for k in ['loss', 'val_loss']]
+        text = self.text_epoch.format(epoch, *metrics)
+        logger.info(text)
+        self.results.append([epoch, *metrics, self.batches])
         save(self.results, self.file_path)
         logger.info(f'Evaluation results saved in {self.file_path}')
 
@@ -62,7 +73,7 @@ class CustomModelCheckpoint(Callback):
 
     on_train_begin = _create_log_directory
 
-    def _save_model_weights(self, epoch, logs={}):
+    def _save_model_weights(self, epoch, logs: dict):
         """ Save model with weights of the single-gpu template model. """
         val_loss = logs.get('val_loss')
         name = f'weights.{epoch + 1:02d}-{val_loss:.2f}.hdf5'
@@ -90,7 +101,7 @@ class CustomTensorBoard(TensorBoard):
         super().__init__(log_dir)
         self.processed_batches = 0
 
-    def _save_batch_loss(self, _, logs={}):
+    def _save_batch_loss(self, _, logs: dict):
         """ Add value to the tensorboard event """
         loss = logs.get('loss')
         summary = tf.Summary()
