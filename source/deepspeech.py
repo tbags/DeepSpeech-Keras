@@ -193,7 +193,7 @@ class DeepSpeech:
             """ This loss ensures that internal LSTM's states are independent to process
             synthesized data. Keras `binary_crossentropy` expects probabilities, so the
             last adversarial layer should be `sigmoid`. """
-            return 1 - binary_crossentropy(y, y_hat)
+            return binary_crossentropy([0.5], y_hat) - .6931
         return [ctc_loss, adversarial_loss] if adversarial else [ctc_loss]
 
     @staticmethod
