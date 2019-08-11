@@ -61,6 +61,6 @@ if __name__ == "__main__":
         alphabet_path=ALPHABET_PATH,
         train_path=TRAIN_PATH,
         dev_path=DEV_PATH,
-        epochs=ARGS.epoch,
+        epochs=ARGS.epochs,
         pretrained_weights=ARGS.pretrained_weights
     )
