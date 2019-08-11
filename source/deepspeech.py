@@ -135,9 +135,9 @@ class DeepSpeech:
         char_labels = Input(name='char_labels', shape=[None], dtype='int16')
         if adversarial:
             is_synthesized = Input(name='is_synthesized', shape=[None], dtype='float')
-            ctc_loss, cross_entropy = losses
+            ctc_loss, adversarial_loss = losses
             targets = {'main_output': char_labels, 'is_synthesized': is_synthesized}
-            metrics = {'main_output': ctc_loss, 'is_synthesized': cross_entropy}
+            metrics = {'main_output': ctc_loss, 'is_synthesized': adversarial_loss}
             loss_weights = [1, adversarial_weight]
             return model.compile(optimizer, losses, metrics, loss_weights, target_tensors=targets)
         else:
@@ -189,10 +189,12 @@ class DeepSpeech:
             label_length = get_length(y)
             return tf.keras.backend.ctc_batch_cost(y, y_hat, sequence_length, label_length)
 
-        if adversarial:                              # Keras `binary_crossentropy` expects probabilities, so
-            return [ctc_loss, binary_crossentropy]   # the last adversarial layer should be `sigmoid`.
-        else:                                        # Keras internally reverse to logits and pass to Tensorflow.
-            return [ctc_loss]
+        def adversarial_loss(y, y_hat):
+            """ This loss ensures that internal LSTM's states are independent to process
+            synthesized data. Keras `binary_crossentropy` expects probabilities, so the
+            last adversarial layer should be `sigmoid`. """
+            return 1 - binary_crossentropy(y, y_hat)
+        return [ctc_loss, adversarial_loss] if adversarial else [ctc_loss]
 
     @staticmethod
     def get_decoder(name: str, alphabet: Alphabet, model: Model, **kwargs) -> Callable:
