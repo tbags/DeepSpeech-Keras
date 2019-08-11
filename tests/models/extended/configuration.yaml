@@ -38,9 +38,9 @@ model:
       units: 36
       activation: softmax
   to_freeze:
-    - name: base_1
-    - name: base_2
-    - name: base_3
+    - base_1
+    - base_2
+    - base_3
 
 optimizer:
   name: adam

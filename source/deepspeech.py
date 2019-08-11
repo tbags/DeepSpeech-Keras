@@ -67,7 +67,8 @@ class DeepSpeech:
 
         losses = cls.get_losses(adversarial=deepspeech_model.is_adversarial)
         optimizer = cls.get_optimizer(**config.optimizer)
-        cls.compile_model(parallel_model, optimizer, losses)        # Set up training for a distributed model.
+        adversarial = deepspeech_model.is_adversarial, deepspeech_model.adversarial_weight
+        cls.compile_model(parallel_model, optimizer, losses, *adversarial)
 
         alphabet = cls.get_alphabet(alphabet_path)
         decoder = cls.get_decoder(alphabet=alphabet, model=deepspeech_model, **config.decoder)
@@ -129,18 +130,18 @@ class DeepSpeech:
 
     @staticmethod
     def compile_model(model: Model, optimizer: Optimizer, losses: List[Callable],
-                      adversarial=False, adversarial_weight=float) -> None:
+                      adversarial=False, adversarial_weight: float = 1) -> None:
         """ The compiled model means the model configured for training. """
         char_labels = Input(name='char_labels', shape=[None], dtype='int16')
         if adversarial:
             is_synthesized = Input(name='is_synthesized', shape=[None], dtype='float')
             ctc_loss, cross_entropy = losses
-            targets = {'char_probs': char_labels, 'is_synthesized_prediction': is_synthesized}
-            metrics = {'char_probs': ctc_loss, 'is_synthesized_prediction': cross_entropy}
+            targets = {'main_output': char_labels, 'is_synthesized': is_synthesized}
+            metrics = {'main_output': ctc_loss, 'is_synthesized': cross_entropy}
             loss_weights = [1, adversarial_weight]
             return model.compile(optimizer, losses, metrics, loss_weights, target_tensors=targets)
         else:
-            targets = {'char_probs': char_labels}
+            targets = {'main_output': char_labels}
             return model.compile(optimizer, losses, target_tensors=targets)
 
     @staticmethod

@@ -1,8 +1,11 @@
 import os
 import logging
 from logging import Logger
-from typing import Callable, Any
+from typing import Callable, Any, List
 import dill
+import tensorflow as tf
+from keras import Model
+from keras.layers import Lambda
 
 
 def save(data: Any, file_name: str):
@@ -76,3 +79,20 @@ def pretrained_models(func: Callable) -> Callable:
             weights_path = os.path.join(model_dir, 'weights.hdf5')
         return func(deepspeech, weights_path)
     return load_wrapper
+
+
+def freeze_layers(model: Model, names: List[str]):
+    for name in names:
+        layer = model.get_layer(name)
+        layer.trainable = False
+
+
+def rename(tensors: List[tf.Tensor], names: List[str]) -> List[tf.Tensor]:
+    """ Return the list of the length the same as tensors"""
+    if len(tensors) > len(names):
+        raise ValueError
+    _rename = lambda name: Lambda(lambda x: x, name=name)
+    return [_rename(names[i])(tensor) for i, tensor in enumerate(tensors)]
+
+def pop(params, name, default=None):
+    pop = lambda : params.pop(name) if name in params else default

@@ -40,7 +40,7 @@ def calculate_units(model: Model) -> int:
 def get_activations_function(model: Model) -> Callable:
     """ Function which handle all activations through one pass. """
     inputs = [model.input, K.learning_phase()]
-    outputs = [layer.output for layer in model.layers][1:]
+    outputs = [layer.output for layer in model.layers if layer.weights]
     return K.function(inputs, outputs)
 
 
@@ -57,7 +57,7 @@ def save_in(store: h5py.File, layer_outputs: List[np.ndarray], metrics: List[Met
 
 def evaluate_batch(deepspeech: DeepSpeech, inputs: Dict[str, np.ndarray], targets: Dict[str, np.ndarray], store: h5py.File,
                    references: pd.DataFrame, save_activations: bool, get_activations: Callable) -> List[Metric]:
-    X, y = inputs['X'], targets['y']
+    X, y = inputs['X'], targets['main_output']
     if save_activations:
         *activations, y_hat = get_activations([X, 0])  # Learning phase is `test=0`
     else:

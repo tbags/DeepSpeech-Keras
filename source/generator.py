@@ -87,9 +87,9 @@ class DataGenerator(Sequence):
             features = self._mask_features(features)
         if self.is_adversarial:
             is_synthesized_labels = np.zeros([self._batch_size, 1]) + self.is_synthesized
-            return {'X': features}, {'char_labels': labels, 'is_synthesized': is_synthesized_labels}
+            return {'X': features}, {'main_output': labels, 'is_synthesized': is_synthesized_labels}
         else:
-            return {'X': features}, {'char_labels': labels}
+            return {'X': features}, {'main_output': labels}
 
     def _read_features(self, paths: List[str]) -> np.ndarray:
         """ Read already prepared features from the store. """

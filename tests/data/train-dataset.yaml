@@ -5,15 +5,19 @@ parameters:
       mask: True
       batch_size: 2
       mask_params:
-          - F: 20
-          - mf: 1
-          - Tmin: 5
-          - Tmax: 15
-          - ratio_t: 0.3
-          - Tspace: 0.3
+          F: 20
+          mf: 1
+          Tmin: 5
+          Tmax: 15
+          ratio_t: 0.3
+          Tspace: 10
       shuffle_after_epoch: 1         # Shuffle generator indices after the `n` epochs
+      is_adversarial: True
+      is_synthesized: True
 
     - file_path: tests/data/audio.csv
       batch_size: 2
       mask: False
       shuffle_after_epoch: 1
+      is_adversarial: True
+      is_synthesized: False

@@ -65,7 +65,6 @@ class DatasetConfiguration(Configuration):
             class_method = 'from_prepared_features'
         else:
             raise ValueError(f'Wrong defined source: {self.source}')
-
         if self.class_name == 'DataGenerator':
             return getattr(DataGenerator, class_method)(**dependencies, **self.parameters)
         elif self.class_name == 'DistributedDataGenerator':

@@ -17,6 +17,7 @@ def test_adversarial():
     model = deepspeech_custom(is_gpu=False, **configuration.model)
     assert model.is_adversarial
     assert 'X' in model.input.name
+
     char_probs, is_synthesized_prediction = model.outputs
     assert char_probs.shape.ndims == 3
     assert is_synthesized_prediction.shape.ndims == 2
@@ -25,7 +26,7 @@ def test_adversarial():
     adversarial_layer = model.get_layer('adversarial_1')
     adversarial_kernel, adversarial_bias = adversarial_layer.get_weights()
     assert is_same(adversarial_bias, [0])
-    assert adversarial_kernel.shape == (10, 1)
+    assert adversarial_kernel.shape == (80, 1)
     assert adversarial_layer.activation == keras.activations.sigmoid
 
     loss = DeepSpeech.get_losses(adversarial=True)

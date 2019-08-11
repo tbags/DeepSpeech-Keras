@@ -8,7 +8,9 @@ features_extractor:
 model:
   name: deepspeech-custom
   input_dim: 80
-  random_state: 1
+  random_state: 2
+  is_adversarial: True
+  adversarial_weight: 5
   layers:
     - constructor: expand_dims
       axis: -1
@@ -21,33 +23,36 @@ model:
       strides: [2, 2]
     - constructor: squeeze_last_dims
       units: 80
+    - constructor: Dense
+      name: adversarial_1
+      is_adversarial_layer: True
+      units: 1
+      activation: sigmoid
     - constructor: LSTM
       name: base_2
       units: 10
       return_sequences: True
-    - constructor: Dense
-      name: adversarial_1
-      is_adversarial: True
-      units: 1
-      activation: sigmoid
-    - constructor: LSTM
-      name: base_3
-      units: 10
-      return_sequences: True
     - constructor: DenseTimeDistributed
-      name: base_4
+      name: base_3
       units: 36
       activation: softmax
+  to_freeze:
+    - base_1
+    - base_2
+    - base_3
 
 optimizer:
   name: adam
   lr: 0.01
 
 callbacks:
-- name: TerminateOnNaN
+  - name: TerminateOnNaN
 
-- name: CustomModelCheckpoint
-  dir_name: checkpoints
+  - name: CustomModelCheckpoint
+    dir_name: checkpoints
+
+  - name: ResultKeeper
+    file_name: results.bin
 
 decoder:
   name: tensorflow
