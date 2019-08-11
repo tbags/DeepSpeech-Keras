@@ -47,7 +47,7 @@ if __name__ == "__main__":
     ARGS = PARSER.parse_args()
     home = lambda name: os.path.join(ARGS.home_dir, name)
     ALPHABET_PATH = ARGS.alphabet if ARGS.alphabet else home('alphabet.txt')
-    MODEL_CONFIG_PATH = ARGS.home_dir if ARGS.home_dir else home('configuration.yaml')
+    MODEL_CONFIG_PATH = ARGS.configuration if ARGS.configuration else home('configuration.yaml')
     TRAIN_PATH = ARGS.train if ARGS.train else home('train-dataset.yaml')
     DEV_PATH = ARGS.dev if ARGS.dev else home('dev-dataset.yaml')
     WEIGHTS_PATH = ARGS.weights if ARGS.weights else home('weights.hdf5')
