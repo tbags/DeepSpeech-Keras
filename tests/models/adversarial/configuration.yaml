@@ -10,7 +10,7 @@ model:
   input_dim: 80
   random_state: 2
   is_adversarial: True
-  adversarial_weight: 5
+  adversarial_weight: 10
   layers:
     - constructor: expand_dims
       axis: -1
@@ -23,11 +23,11 @@ model:
       strides: [2, 2]
     - constructor: squeeze_last_dims
       units: 80
-    - constructor: Dense
+    - constructor: DenseTimeDistributed
       name: adversarial_1
       is_adversarial_layer: True
-      units: 1
-      activation: sigmoid
+      units: 80
+      activation: linear
     - constructor: LSTM
       name: base_2
       units: 10

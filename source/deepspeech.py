@@ -6,7 +6,6 @@ import numpy as np
 import tensorflow as tf
 from keras.layers import Input
 from keras.utils import multi_gpu_model
-from keras.losses import binary_crossentropy
 from keras.callbacks import Callback, TerminateOnNaN, LearningRateScheduler, ReduceLROnPlateau, History
 from keras.optimizers import Optimizer, SGD, Adam
 from keras.backend.tensorflow_backend import _get_available_gpus as get_available_gpus
@@ -189,11 +188,14 @@ class DeepSpeech:
             label_length = get_length(y)
             return tf.keras.backend.ctc_batch_cost(y, y_hat, sequence_length, label_length)
 
-        def adversarial_loss(y, y_hat):
-            """ This loss ensures that internal LSTM's states are independent to process
-            synthesized data. Keras `binary_crossentropy` expects probabilities, so the
-            last adversarial layer should be `sigmoid`. """
-            return binary_crossentropy([0.5], y_hat) - .6931
+        def adversarial_loss(labels, activations):
+            """ This loss ensures that internal LSTM's states
+            are not linear separable for rich and synthesized data."""
+            labels = tf.cast(labels, tf.bool)
+            synthesize_mean = tf.reduce_mean(tf.boolean_mask(activations, labels), axis=0)
+            rich_mean = tf.reduce_mean(tf.boolean_mask(activations, tf.logical_not(labels)), axis=0)
+            return tf.reduce_sum(tf.abs(synthesize_mean - rich_mean))
+
         return [ctc_loss, adversarial_loss] if adversarial else [ctc_loss]
 
     @staticmethod
