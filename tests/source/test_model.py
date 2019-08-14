@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import keras
 import deepspeech
 from deepspeech import DeepSpeech
 from source.model import deepspeech_custom
@@ -20,14 +19,7 @@ def test_adversarial():
 
     char_probs, is_synthesized_prediction = model.outputs
     assert char_probs.shape.ndims == 3
-    assert is_synthesized_prediction.shape.ndims == 2
-    assert is_synthesized_prediction.shape[1].value == 1
-
-    adversarial_layer = model.get_layer('adversarial_1')
-    adversarial_kernel, adversarial_bias = adversarial_layer.get_weights()
-    assert is_same(adversarial_bias, [0])
-    assert adversarial_kernel.shape == (80, 1)
-    assert adversarial_layer.activation == keras.activations.sigmoid
+    assert is_synthesized_prediction.shape.ndims == 3
 
     loss = DeepSpeech.get_losses(adversarial=True)
     optimizer = DeepSpeech.get_optimizer(**configuration.optimizer)

@@ -21,7 +21,7 @@ def test_adversarial_generator():
     deepspeech.parallel_model.fit(inputs, targets)
 
     # Generator
-    history_callback = deepspeech.fit(train_generator, dev_generator, epochs=1, shuffle=False)
+    history_callback = deepspeech.fit(train_generator, dev_generator, epochs=2, shuffle=False)
     metric_names = ['loss', 'main_output_loss', 'is_synthesized_loss', 'is_synthesized_adversarial_loss',
                     'val_loss', 'val_main_output_loss', 'val_is_synthesized_loss']
     assert all(metric in history_callback.history for metric in metric_names)

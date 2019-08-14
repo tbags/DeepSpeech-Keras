@@ -2,7 +2,7 @@ import yaml
 from typing import List, Dict
 from source.audio import FeaturesExtractor
 from source.text import Alphabet
-from source.generator import DataGenerator, DistributedDataGenerator
+from source.generator import DataGenerator, AdversarialDataGenerator
 
 
 class Configuration:
@@ -67,8 +67,8 @@ class DatasetConfiguration(Configuration):
             raise ValueError(f'Wrong defined source: {self.source}')
         if self.class_name == 'DataGenerator':
             return getattr(DataGenerator, class_method)(**dependencies, **self.parameters)
-        elif self.class_name == 'DistributedDataGenerator':
-            return getattr(DistributedDataGenerator, class_method)(
+        elif self.class_name == 'AdversarialDataGenerator':
+            return getattr(AdversarialDataGenerator, class_method)(
                 [{**dependencies, **kwargs} for kwargs in self.parameters]
             )
         else:

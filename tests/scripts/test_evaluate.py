@@ -82,6 +82,6 @@ def test_evaluate(deepspeech: DeepSpeech, generator: Iterable, store_path: str):
     with pd.HDFStore(store_path, mode='r') as store:
         references = store['references']
 
-    assert len(references) == len(metrics) == 4
+    assert len(references) == len(metrics) == 8
     assert all(references.columns.values == np.array(['transcript', 'prediction', 'wer', 'cer']))
     os.remove(store_path)

@@ -86,7 +86,7 @@ class DataGenerator(Sequence):
         if self.mask:
             features = self._mask_features(features)
         if self.is_adversarial:
-            is_synthesized_labels = np.zeros([self._batch_size, 1]) + self.is_synthesized
+            is_synthesized_labels = np.zeros(self._batch_size) + self.is_synthesized
             return {'X': features}, {'main_output': labels, 'is_synthesized': is_synthesized_labels}
         else:
             return {'X': features}, {'main_output': labels}
@@ -116,18 +116,19 @@ class DataGenerator(Sequence):
             np.random.shuffle(self.indices)
 
 
-class DistributedDataGenerator(Sequence):
+class AdversarialDataGenerator(Sequence):
 
     def __init__(self, generators: List[DataGenerator]):
-        self._generators = generators
-        self._generator_sizes = [len(generator) for generator in self._generators]
-        self._generator_limits = np.cumsum(self._generator_sizes)
+        self._generator, *_ = [g for g in generators if not g.is_synthesized]       # Takes only the first one
+        self._synthesized_generators = [g for g in generators if g.is_synthesized]
+        self._synthesized_generators_sizes = [len(generator) for generator in self._synthesized_generators]
+        self._synthesized_generators_limits = np.cumsum(self._synthesized_generators_sizes)
         self.epoch = 0
         self.indices = np.arange(len(self))
         np.random.shuffle(self.indices)
 
     @classmethod
-    def from_audio_files(cls, generators_params: List[Dict]) -> "DistributedDataGenerator":
+    def from_audio_files(cls, generators_params: List[Dict]) -> "AdversarialDataGenerator":
         generators = []
         for generator_parameters in generators_params:
             generator = DataGenerator.from_audio_files(**generator_parameters)
@@ -135,7 +136,7 @@ class DistributedDataGenerator(Sequence):
         return cls(generators)
 
     @classmethod
-    def from_prepared_features(cls, generators_params: List[Dict]) -> "DistributedDataGenerator":
+    def from_prepared_features(cls, generators_params: List[Dict]) -> "AdversarialDataGenerator":
         generators = []
         for generator_parameters in generators_params:
             generator = DataGenerator.from_prepared_features(**generator_parameters)
@@ -144,21 +145,65 @@ class DistributedDataGenerator(Sequence):
 
     def __len__(self):
         """ Denotes the number of batches per epoch. """
-        return sum(self._generator_sizes)
+        return len(self._generator)
 
-    def __getitem__(self, index):
+    def __getitem__(self, next_index):
         """ Operator to get the batch data. """
-        next_index = self.indices[index]
-        generator_index = np.searchsorted(self._generator_limits, next_index, side='right')     # Right side because limits are based on the lengths, not indices
-        generator = self._generators[generator_index]
+        index = self.indices[next_index]
+        rich_samples = self._generator[index]
+        synthesized_samples = self.get_synthesized_samples(index)
+        batch = self.concatenate(rich_samples, synthesized_samples)
+        return batch
+
+    def concatenate(self, batch, batch_syn):
+        def concat(rich: np.ndarray, synthesized: np.ndarray):
+            new = np.zeros_like(np.concatenate([rich, synthesized]))
+            new[rich_index] = rich
+            new[syn_index] = synthesized
+            return new
+
+        def concat_features(rich: np.ndarray, synthesized: np.ndarray):
+            aligned = FeaturesExtractor.align([*rich, *synthesized])
+            rich = aligned[:len(rich)]
+            synthesized = aligned[len(rich):]
+            new = np.zeros_like(aligned)
+            new[rich_index] = rich
+            new[syn_index] = synthesized
+            return new
+
+        def concat_transcripts(rich: np.ndarray, synthesized: np.ndarray):
+            arrays = [*rich, *synthesized]
+            max_array = max(arrays, key=len)
+            default = self._generator.alphabet.blank_token
+            new = np.full(shape=[len(arrays), *max_array.shape], fill_value=default)
+            for i, array in enumerate(arrays):
+                size, = array.shape
+                new[i, :size] = array
+            return new
+
+        (inputs, targets), (inputs_syn, targets_syn) = batch, batch_syn
+        X, X_syn = inputs['X'], inputs_syn['X']
+        y, y_syn = targets['main_output'], targets_syn['main_output']
+        labels, labels_syn = targets['is_synthesized'], targets_syn['is_synthesized']
+
+        index = np.arange(len(labels)+len(labels_syn))
+        syn_index = np.random.choice(index, len(labels_syn), replace=False)
+        rich_index = list(set(range(len(index))) - set(syn_index))
+        return {'X': concat_features(X, X_syn)}, \
+               {'main_output': concat_transcripts(y, y_syn), 'is_synthesized': concat(labels, labels_syn)}
+
+    def get_synthesized_samples(self, index):
+        generator_index = np.searchsorted(self._synthesized_generators_limits, index, side='right')     # Right side because limits are based on the lengths, not indices
+        generator = self._synthesized_generators[generator_index]
         if generator_index == 0:
-            gen_index = next_index
+            gen_index = index
         else:
-            gen_index = next_index - self._generator_limits[generator_index-1]
+            gen_index = index - self._synthesized_generators_limits[generator_index-1]
         return generator[gen_index]
 
     def on_epoch_end(self):
         np.random.shuffle(self.indices)
         self.epoch += 1
-        for generator in self._generators:
+        self._generator.on_epoch_end()
+        for generator in self._synthesized_generators:      # Do even if all generators are not exhaust.
             generator.on_epoch_end()

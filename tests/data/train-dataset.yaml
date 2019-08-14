@@ -1,9 +1,9 @@
-class_name: DistributedDataGenerator
+class_name: AdversarialDataGenerator
 source: audio_files
 parameters:
     - file_path: tests/data/audio.csv
       mask: True
-      batch_size: 2
+      batch_size: 4
       mask_params:
           F: 20
           mf: 1
@@ -11,13 +11,20 @@ parameters:
           Tmax: 15
           ratio_t: 0.3
           Tspace: 10
-      shuffle_after_epoch: 1         # Shuffle generator indices after the `n` epochs
+      shuffle_after_epoch: 1
+      is_adversarial: True
+      is_synthesized: False
+
+    - file_path: tests/data/audio.csv
+      batch_size: 4
+      mask: False
+      shuffle_after_epoch: 1
       is_adversarial: True
       is_synthesized: True
 
     - file_path: tests/data/audio.csv
-      batch_size: 2
+      batch_size: 4
       mask: False
       shuffle_after_epoch: 1
       is_adversarial: True
-      is_synthesized: False
+      is_synthesized: True
