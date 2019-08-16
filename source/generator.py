@@ -175,10 +175,15 @@ class AdversarialDataGenerator(Sequence):
             arrays = [*rich, *synthesized]
             max_array = max(arrays, key=len)
             default = self._generator.alphabet.blank_token
-            new = np.full(shape=[len(arrays), *max_array.shape], fill_value=default)
+            aligned = np.full(shape=[len(arrays), *max_array.shape], fill_value=default)
             for i, array in enumerate(arrays):
                 size, = array.shape
-                new[i, :size] = array
+                aligned[i, :size] = array
+            rich = aligned[:len(rich)]
+            synthesized = aligned[len(rich):]
+            new = np.zeros_like(aligned)
+            new[rich_index] = rich
+            new[syn_index] = synthesized
             return new
 
         (inputs, targets), (inputs_syn, targets_syn) = batch, batch_syn
